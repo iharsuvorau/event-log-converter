@@ -1,0 +1,10 @@
+[package]
+name = "event_log_converter"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chrono = "0.4.23"
+quick-xml = "0.26.0"
+serde = {  version = "1.0.151", features = ["derive"] }
+serde-xml-rs = "0.6.0"
