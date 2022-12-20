@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-chrono = "0.4.23"
+chrono = { version = "0.4.23", features = ["serde"] }
 csv = "1.1.6"
 quick-xml = "0.26.0"
 serde = { version = "1.0.151", features = ["derive"] }

@@ -33,33 +33,8 @@ pub struct Trace {
 pub struct Event {
     pub activity: String,
     pub resource: String,
-    #[serde(
-        serialize_with = "serialize_datetime",
-        deserialize_with = "deserialize_datetime",
-        rename = "start_time"
-    )]
     pub start_time: DateTime<Utc>,
-    #[serde(
-        serialize_with = "serialize_datetime",
-        deserialize_with = "deserialize_datetime",
-        rename = "end_time"
-    )]
     pub end_time: DateTime<Utc>,
-}
-
-pub fn serialize_datetime<S>(dt: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: serde::Serializer,
-{
-    serializer.serialize_str(&dt.format("%Y-%m-%dT%H:%M:%S%z").to_string())
-}
-
-pub fn deserialize_datetime<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let s = String::deserialize(deserializer)?;
-    Ok(DateTime::parse_from_rfc3339(&s).unwrap().with_timezone(&Utc))
 }
 
 pub fn lifecycle_to_event_log(lifecycle_log: &lifecycle::EventLog) -> EventLog {
