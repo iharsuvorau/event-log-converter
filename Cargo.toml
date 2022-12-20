@@ -1,5 +1,5 @@
 [package]
-name = "event-log-converter"
+name = "event_log_converter"
 version = "0.1.0"
 edition = "2021"
 description = "Event log converters. Supports: XES to CSV."
