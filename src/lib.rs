@@ -26,8 +26,8 @@ mod tests {
     #[test]
     fn test_lifecycle_to_event_log() {
         let file_path = test_log_path();
-        let log = xes::lifecycle::parse_file(&file_path, false);
-        let event_log = crate::conversion::lifecycle_to_interval(&log);
+        let mut log = xes::lifecycle::parse_file(&file_path, false);
+        let event_log = crate::conversion::lifecycle_to_interval(&mut log);
         // println!("{event_log:?}");
         event_log.pretty_print();
     }
