@@ -2,6 +2,7 @@
 
 pub mod xes;
 pub mod io;
+pub mod conversion;
 
 #[cfg(test)]
 mod tests {
@@ -18,15 +19,15 @@ mod tests {
     #[test]
     fn test_parse_xes() {
         let file_path = test_log_path();
-        let log = xes::lifecycle::parse_file(&file_path);
+        let log = xes::lifecycle::parse_file(&file_path, false);
         println!("{log:?}");
     }
 
     #[test]
     fn test_lifecycle_to_event_log() {
         let file_path = test_log_path();
-        let log = xes::lifecycle::parse_file(&file_path);
-        let event_log = xes::interval::lifecycle_to_event_log(&log);
+        let log = xes::lifecycle::parse_file(&file_path, false);
+        let event_log = crate::conversion::lifecycle_to_interval(&log);
         // println!("{event_log:?}");
         event_log.pretty_print();
     }

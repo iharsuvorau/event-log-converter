@@ -1,6 +1,5 @@
 use std::io::Read;
 
-use chrono::{DateTime, Utc};
 use quick_xml::events::Event as XmlEvent;
 use quick_xml::Reader;
 
@@ -20,11 +19,11 @@ pub struct Trace {
 pub struct Event {
     pub activity: String,
     pub resource: String,
-    pub timestamp: DateTime<Utc>,
+    pub timestamp: String,
     pub lifecycle: String,
 }
 
-pub fn parse_file(file_name: &str) -> EventLog {
+pub fn parse_file(file_name: &str, filter_start_end_events: bool) -> EventLog {
     let xml = std::fs::read_to_string(file_name).unwrap();
     let mut reader = Reader::from_str(&xml);
     reader.trim_text(true);
@@ -40,7 +39,7 @@ pub fn parse_file(file_name: &str) -> EventLog {
     let mut current_event = Event {
         activity: String::new(),
         resource: String::new(),
-        timestamp: Utc::now(),
+        timestamp: String::new(),
         lifecycle: String::new(),
     };
     let mut in_trace = false;
@@ -50,6 +49,7 @@ pub fn parse_file(file_name: &str) -> EventLog {
     let mut in_timestamp = false;
     let mut in_lifecycle = false;
     let mut in_variant = false;
+    let mut skip_event = false;
 
     loop {
         match reader.expand_empty_elements(false).read_event_into(&mut buf) {
@@ -71,23 +71,11 @@ pub fn parse_file(file_name: &str) -> EventLog {
                     current_event = Event {
                         activity: String::new(),
                         resource: String::new(),
-                        timestamp: Utc::now(),
+                        timestamp: String::new(),
                         lifecycle: String::new(),
                     };
                 }
 
-                _ => (),
-            },
-
-            Ok(XmlEvent::End(ref e)) => match e.name().as_ref() {
-                b"trace" => {
-                    in_trace = false;
-                    event_log.traces.push(current_trace.clone());
-                }
-                b"event" => {
-                    in_event = false;
-                    current_trace.events.push(current_event.clone());
-                }
                 _ => (),
             },
 
@@ -149,6 +137,13 @@ pub fn parse_file(file_name: &str) -> EventLog {
 
                         if key == "value" {
                             if in_name {
+                                if filter_start_end_events {
+                                    let v = value.to_lowercase();
+                                    if v == "start" || v == "end" {
+                                        skip_event = true;
+                                    }
+                                }
+
                                 if in_event {
                                     current_event.activity = value;
                                 } else if in_trace {
@@ -157,8 +152,7 @@ pub fn parse_file(file_name: &str) -> EventLog {
                             } else if in_resource && in_event {
                                 current_event.resource = value;
                             } else if in_timestamp && in_event {
-                                current_event.timestamp =
-                                    DateTime::parse_from_rfc3339(&value).unwrap().with_timezone(&Utc);
+                                current_event.timestamp = value;
                             } else if in_lifecycle && in_event {
                                 current_event.lifecycle = value;
                             } else if in_variant && in_trace {
@@ -168,6 +162,22 @@ pub fn parse_file(file_name: &str) -> EventLog {
                     });
                 }
 
+                _ => (),
+            },
+
+            Ok(XmlEvent::End(ref e)) => match e.name().as_ref() {
+                b"trace" => {
+                    in_trace = false;
+                    event_log.traces.push(current_trace.clone());
+                }
+                b"event" => {
+                    in_event = false;
+                    if !skip_event {
+                        current_trace.events.push(current_event.clone());
+                    } else {
+                        skip_event = false;
+                    }
+                }
                 _ => (),
             },
 
