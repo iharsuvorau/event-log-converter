@@ -39,3 +39,14 @@ Options:
   -V, --version                  Print version information
 
 ```
+
+## Runtime Performance
+
+A simplistic comparison of running time for the conversion of a 175 MB XES file to CSV and back to XES.
+
+| Tool                | Conversion Type | User Time | System Time | CPU Usage | Total Time |
+|---------------------|-----------------|-----------|-------------|-----------|------------|
+| pm4py_wrapper       | XES to CSV      | 15.20s    | 4.85s       | 111%      | 17.943s    |
+| pm4py_wrapper       | CSV to XES      | 28.33s    | 5.28s       | 113%      | 29.682s    |
+| event_log_converter | XES to CSV      | 1.01s     | 0.11s       | 99%       | 1.129s     |
+| event_log_converter | CSV to XES      | 0.77s     | 0.19s       | 99%       | 0.966s     |
