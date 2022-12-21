@@ -1,11 +1,26 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize)]
-pub struct EventLog<'a> {
-    pub traces: Vec<Trace<'a>>,
+pub struct EventLog {
+    pub traces: Vec<Trace>,
 }
 
-impl EventLog<'_> {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Trace {
+    pub case: String,
+    pub variant: String,
+    pub events: Vec<Event>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Event {
+    pub activity: String,
+    pub resource: String,
+    pub start_time: String,
+    pub end_time: String,
+}
+
+impl EventLog {
     pub fn pretty_print(&self) {
         for trace in &self.traces {
             println!("Trace: {}", trace.case);
@@ -18,19 +33,4 @@ impl EventLog<'_> {
             }
         }
     }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Trace<'a> {
-    pub case: &'a str,
-    pub variant: &'a str,
-    pub events: Vec<Event<'a>>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Event<'a> {
-    pub activity: &'a str,
-    pub resource: &'a str,
-    pub start_time: &'a str,
-    pub end_time: &'a str,
 }

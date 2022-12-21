@@ -1,4 +1,5 @@
 use std::io::Read;
+use std::path::Path;
 
 use quick_xml::events::Event as XmlEvent;
 use quick_xml::Reader;
@@ -23,7 +24,7 @@ pub struct Event {
     pub lifecycle: String,
 }
 
-pub fn parse_file(file_name: &str, filter_start_end_events: bool) -> EventLog {
+pub fn parse_file(file_name: &Path, filter_start_end_events: bool) -> EventLog {
     let xml = std::fs::read_to_string(file_name).unwrap();
     let mut reader = Reader::from_str(&xml);
     reader.trim_text(true);
