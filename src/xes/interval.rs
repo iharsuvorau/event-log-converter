@@ -1,8 +1,12 @@
 use serde::{Deserialize, Serialize};
+use crate::io;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct EventLog {
     pub traces: Vec<Trace>,
+
+    #[serde(skip_serializing)]
+    pub columns: io::EventLogColumns
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

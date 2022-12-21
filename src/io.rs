@@ -1,29 +1,40 @@
+use std::collections::HashMap;
 use std::io;
-use std::io::BufWriter;
-use std::path::Path;
 
 use quick_xml::events::{BytesDecl, Event as XmlEvent};
 use serde::{Deserialize, Serialize};
 
-use crate::conversion;
-use crate::xes::interval::{EventLog, Trace};
 use crate::xes::{interval, lifecycle};
+use crate::xes::interval::{EventLog, Trace};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct Row {
-    case: String,
-    variant: String,
-    activity: String,
-    resource: String,
-    start_time: String,
-    end_time: String,
+pub struct EventLogColumns {
+    pub case: String,
+    pub variant: String,
+    pub activity: String,
+    pub resource: String,
+    pub start_time: String,
+    pub end_time: String,
+}
+
+impl EventLogColumns {
+    pub fn default_style() -> EventLogColumns {
+        EventLogColumns {
+            case: "case".to_string(),
+            variant: "variant".to_string(),
+            activity: "activity".to_string(),
+            resource: "resource".to_string(),
+            start_time: "start_time".to_string(),
+            end_time: "end_time".to_string(),
+        }
+    }
 }
 
 pub fn interval_to_csv(event_log: &interval::EventLog, writer: &mut impl io::Write) {
     let mut wtr = csv::Writer::from_writer(writer);
     for trace in &event_log.traces {
         for event in &trace.events {
-            wtr.serialize(Row {
+            wtr.serialize(EventLogColumns {
                 case: trace.case.to_string(),
                 variant: trace.variant.to_string(),
                 activity: event.activity.to_string(),
@@ -43,24 +54,24 @@ pub fn csv_to_interval(bytes: &[u8], event_log: &mut EventLog) {
     let rows = reader
         .deserialize()
         .map(|row| row.expect("Could not deserialize row"))
-        .collect::<Vec<Row>>();
+        .collect::<Vec<HashMap<String, String>>>();
 
     let traces = rows
-        .group_by(|a, b| a.case == b.case)
+        .group_by(|a, b| a.get(&event_log.columns.case).unwrap() == b.get(&event_log.columns.case).unwrap())
         .map(|group| {
             let events = group
                 .iter()
                 .map(|row| interval::Event {
-                    activity: row.activity.clone(),
-                    resource: row.resource.clone(),
-                    start_time: row.start_time.clone(),
-                    end_time: row.end_time.clone(),
+                    activity: row.get(&event_log.columns.activity).unwrap().to_string(),
+                    resource: row.get(&event_log.columns.resource).unwrap().to_string(),
+                    start_time: row.get(&event_log.columns.start_time).unwrap().to_string(),
+                    end_time: row.get(&event_log.columns.end_time).unwrap().to_string(),
                 })
                 .collect::<Vec<_>>();
 
             Trace {
-                case: group[0].case.clone(),
-                variant: group[0].variant.clone(),
+                case: group[0].get(&event_log.columns.case).unwrap().to_string(),
+                variant: group[0].get(&event_log.columns.variant).unwrap().to_string(),
                 events,
             }
         })
@@ -127,32 +138,6 @@ pub fn lifecycle_to_xes(event_log: &lifecycle::EventLog, writer: &mut impl io::W
         .unwrap();
 }
 
-pub fn convert_xes_to_csv(input_log: &Path, output_dir: &Path, filter_start_end_events: bool) {
-    let mut log = lifecycle::parse_file(input_log, filter_start_end_events);
-    let event_log = conversion::lifecycle_to_interval(&mut log);
-
-    let input_log_path = Path::new(&input_log);
-    let output_file_path = output_dir
-        .join(input_log_path.file_name().unwrap())
-        .with_extension("csv");
-
-    let mut csv_file = std::fs::File::create(output_file_path).unwrap();
-    interval_to_csv(&event_log, &mut csv_file);
-}
-
-pub fn convert_csv_to_xes(input_log: &Path, output_dir: &Path) {
-    let mut event_log = EventLog { traces: Vec::new() };
-    let bytes = std::fs::read(input_log).unwrap();
-    csv_to_interval(&bytes, &mut event_log);
-
-    let interval_log = conversion::interval_to_lifecycle(&event_log);
-
-    let output_file_path = output_dir.join(input_log.file_name().unwrap()).with_extension("xes");
-
-    let mut xes_file = BufWriter::new(std::fs::File::create(output_file_path).unwrap());
-    lifecycle_to_xes(&interval_log, &mut xes_file);
-}
-
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
@@ -163,7 +148,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_event_log_to_csv() {
+    fn test_lifecycle_to_csv() {
         let mut input_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         input_path.push("event_logs");
         input_path.push("Production.xes");
@@ -189,7 +174,39 @@ mod tests {
         let data = "case,variant,activity,resource,start_time,end_time\
         \n1,1,A,R1,1,2";
 
-        let mut event_log = EventLog { traces: Vec::new() };
+        let mut event_log = EventLog {
+            traces: Vec::new(),
+            columns: EventLogColumns::default_style(),
+        };
+
+        csv_to_interval(data.as_bytes(), &mut event_log);
+
+        assert_eq!(event_log.traces.len(), 1);
+        assert_eq!(event_log.traces[0].events.len(), 1);
+        assert_eq!(event_log.traces[0].case, "1");
+        assert_eq!(event_log.traces[0].variant, "1");
+        assert_eq!(event_log.traces[0].events[0].activity, "A");
+        assert_eq!(event_log.traces[0].events[0].resource, "R1");
+        assert_eq!(event_log.traces[0].events[0].start_time, "1");
+        assert_eq!(event_log.traces[0].events[0].end_time, "2");
+    }
+
+    #[test]
+    fn test_csv_to_interval_with_columns() {
+        let data = "case_id,variant,Activity,Resource,start_timestamp,end_timestamp\
+        \n1,1,A,R1,1,2";
+
+        let mut event_log = EventLog {
+            traces: Vec::new(),
+            columns: EventLogColumns {
+                case: "case_id".to_string(),
+                variant: "variant".to_string(),
+                activity: "Activity".to_string(),
+                resource: "Resource".to_string(),
+                start_time: "start_timestamp".to_string(),
+                end_time: "end_timestamp".to_string(),
+            },
+        };
 
         csv_to_interval(data.as_bytes(), &mut event_log);
 
@@ -209,7 +226,10 @@ mod tests {
         input_log.push("event_logs");
         input_log.push("Production_custom.csv");
 
-        let mut event_log = EventLog { traces: Vec::new() };
+        let mut event_log = EventLog {
+            traces: Vec::new(),
+            columns: EventLogColumns::default_style(),
+        };
         let bytes = std::fs::read(input_log).unwrap();
 
         csv_to_interval(&bytes, &mut event_log);

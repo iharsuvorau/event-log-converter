@@ -3,6 +3,7 @@
 pub mod xes;
 pub mod io;
 pub mod conversion;
+pub mod cli;
 
 #[cfg(test)]
 mod tests {

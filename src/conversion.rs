@@ -1,8 +1,12 @@
+use crate::io;
 use crate::xes::interval::{Event, EventLog, Trace};
 use crate::xes::lifecycle;
 
 pub fn lifecycle_to_interval(lifecycle_log: &mut lifecycle::EventLog) -> EventLog {
-    let mut event_log = EventLog { traces: vec![] };
+    let mut event_log = EventLog {
+        traces: vec![],
+        columns: io::EventLogColumns::default_style()
+    };
 
     for trace in &mut lifecycle_log.traces {
         let mut new_trace = Trace {
@@ -108,6 +112,7 @@ mod tests {
         \n1,1,A,R1,1,2";
         let mut event_log = interval::EventLog {
             traces: Vec::new(),
+            columns: io::EventLogColumns::default_style(),
         };
         io::csv_to_interval(data.as_bytes(), &mut event_log);
 
