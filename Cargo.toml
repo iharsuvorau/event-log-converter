@@ -1,6 +1,6 @@
 [package]
 name = "event_log_converter"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 description = "Event log converters. Supports: XES to CSV, CSV to XES."
 readme = "README.md"
