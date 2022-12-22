@@ -42,7 +42,9 @@ Options:
 
 ## Runtime Performance
 
-A simplistic comparison of running time for the conversion of a 175 MB XES file to CSV and back to XES.
+**15x improvement** over pm4py in runtime.
+
+A simplistic comparison of running time for the conversion of a 175 MB XES file to CSV and back to XES:
 
 | Tool                | Conversion Type | User Time | System Time | CPU Usage | Total Time |
 |---------------------|-----------------|-----------|-------------|-----------|------------|
@@ -50,3 +52,14 @@ A simplistic comparison of running time for the conversion of a 175 MB XES file 
 | pm4py_wrapper       | CSV to XES      | 28.33s    | 5.28s       | 113%      | 29.682s    |
 | event_log_converter | XES to CSV      | 1.01s     | 0.11s       | 99%       | 1.129s     |
 | event_log_converter | CSV to XES      | 0.77s     | 0.19s       | 99%       | 0.966s     |
+
+
+
+## Memory Usage
+
+**3x improvement** over pm4py in memory usage.
+
+175 MB XES file to CSV conversion:
+
+![pm4py_wrapper-175M](https://user-images.githubusercontent.com/6259054/209220031-dd884945-4599-4cf9-827a-9e950cefb714.jpg)
+![event_log_converter-175M-release](https://user-images.githubusercontent.com/6259054/209220109-72db7cbd-d259-43fa-b72a-c1a50eb0cf33.jpg)
